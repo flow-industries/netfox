@@ -20,6 +20,12 @@ func write_for(peer: int, snapshots: Array[_Snapshot], properties: _PropertyPool
 	for snapshot in snapshots:
 		var serialized := _dense_serializer.write_for(peer, snapshot, properties)
 
+		# Skip empty inner snapshots: dense serializer drops the tick header when
+		# it has no auth data, so encoding a zero-sized chunk would deserialize
+		# as a Snapshot(tick=0) on the receiver and trip the "too old" warning.
+		if serialized.is_empty():
+			continue
+
 		# Write size and snapshot
 		varuint.encode(serialized.size(), buffer)
 		buffer.put_data(serialized)

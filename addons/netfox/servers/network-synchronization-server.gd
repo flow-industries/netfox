@@ -325,6 +325,13 @@ func _ready():
 	_cmd_full_sync = _command_server.register_command(_handle_full_sync, MultiplayerPeer.TRANSFER_MODE_UNRELIABLE_ORDERED)
 	_cmd_diff_sync = _command_server.register_command(_handle_diff_sync, MultiplayerPeer.TRANSFER_MODE_UNRELIABLE_ORDERED)
 
+	NetworkTime.on_stall_recovered.connect(_on_stall_recovered)
+
+func _on_stall_recovered() -> void:
+	_rb_full_scheduler.reset()
+	_sync_full_scheduler.reset()
+	_last_sync_state_sent = _Snapshot.new(NetworkTime.tick)
+
 func _handle_input(sender: int, data: PackedByteArray):
 	var buffer := StreamPeerBuffer.new()
 	buffer.data_array = data

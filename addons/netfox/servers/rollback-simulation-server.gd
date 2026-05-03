@@ -230,3 +230,8 @@ func _ready():
 	# Ensure dependencies
 	if not _history_server: _history_server = NetworkHistoryServer
 	if not _liveness_server: _liveness_server = RollbackLivenessServer
+
+	NetworkTime.on_stall_recovered.connect(_on_stall_recovered)
+
+func _on_stall_recovered() -> void:
+	_simulated_ticks.clear()

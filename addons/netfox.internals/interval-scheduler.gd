@@ -20,3 +20,6 @@ func is_now() -> bool:
 	else:
 		_idx += 1
 		return false
+
+func reset() -> void:
+	_idx = 0

@@ -286,6 +286,18 @@ func _merge_history(snapshot: _Snapshot, history: _PerObjectHistory, reverse: bo
 
 	return has_updated
 
+func _ready() -> void:
+	NetworkTime.on_stall_recovered.connect(_on_stall_recovered)
+
+func _on_stall_recovered() -> void:
+	_rb_input_history.clear()
+	_rb_state_history.clear()
+	_sync_history.clear()
+	_rb_input_snapshots.clear()
+	_rb_state_snapshots.clear()
+	_sync_state_snapshots.clear()
+	_ignored_subjects.clear()
+
 func _get_latest_for(subjects: Array, tick: int, history: _PerObjectHistory) -> int:
 	var latest := -1
 

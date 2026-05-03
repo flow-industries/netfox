@@ -29,6 +29,9 @@ func is_auth(tick: int, subject: Object) -> bool:
 func erase_subject(subject: Object) -> void:
 	_data.erase(subject)
 
+func clear() -> void:
+	_data.clear()
+
 func ensure_snapshot(tick: int, subject: Object, carry_forward: bool) -> _ObjectSnapshot:
 	var has_subject := _data.has(subject)
 	if not _data.has(subject):

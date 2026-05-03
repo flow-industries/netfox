@@ -349,6 +349,13 @@ signal after_tick_loop()
 ## concludes. When running as server, this is emitted instantly after started.
 signal after_sync()
 
+## Emitted when the engine recovers from a main-thread stall.
+## [br][br]
+## Triggered after a long pause (e.g. browser tab backgrounded, editor break),
+## once [member tick] has been resynced to remote-clock time. Listeners holding
+## tick-indexed history should drop or rebaseline it. See upstream issue #543.
+signal on_stall_recovered()
+
 ## Emitted after a client synchronizes their time.
 ## [br][br]
 ## This is only emitted on the server, and is emitted when the client concludes
@@ -556,6 +563,7 @@ func _loop() -> void:
 		_was_paused = false
 		_next_tick_time += clock_step
 		_tick = seconds_to_ticks(NetworkTimeSynchronizer.get_time())
+		on_stall_recovered.emit()
 
 	# Run tick loop if needed
 	var ticks_in_loop := 0

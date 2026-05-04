@@ -350,6 +350,20 @@ func _ready():
 	NetworkSynchronizationServer._on_input.connect(_handle_input)
 	NetworkSynchronizationServer._on_state.connect(_handle_state)
 
+	NetworkTime.on_stall_recovered.connect(_on_stall_recovered)
+
+func _on_stall_recovered() -> void:
+	# After a clock panic / pause recovery, _earliest_* still points at pre-stall
+	# ticks. The next _rollback() would compute a span far past history_limit
+	# and burn frames on no-op iterations against histories that were already
+	# cleared by the other servers' handlers. Reset everything that anchors
+	# rollback to a tick.
+	_earliest_input = -1
+	_earliest_state = -1
+	_simulated_nodes.clear()
+	_mutated_nodes.clear()
+	_resim_from = NetworkTime.tick
+
 func _exit_tree():
 	NetfoxLogger.free_tag(_get_rollback_tag)
 
@@ -387,6 +401,12 @@ func _rollback() -> void:
 
 	# to = Current tick
 	var to := NetworkTime.tick
+
+	# Belt-and-suspenders: clamp `from` to the actual retained history range so a
+	# stale `_earliest_*` value (e.g. surviving a stall through the brief window
+	# before the recovery handler fires) cannot push the loop into territory the
+	# history servers no longer cover.
+	from = maxi(from, history_start)
 
 	# Limit number of rollback ticks
 	if to - from > history_limit:
@@ -449,6 +469,11 @@ func _rollback() -> void:
 func _handle_input(snapshot: _Snapshot):
 	if snapshot.is_empty():
 		return
+	# Drop snapshots older than retained history. Otherwise a packet in flight
+	# during a stall window can re-broaden the rollback range backwards, even
+	# after _on_stall_recovered cleared _earliest_*.
+	if snapshot.tick < history_start:
+		return
 	if _earliest_input < 0 or snapshot.tick < _earliest_input:
 		_logger.trace("Ingested input @%d, earliest @%d->@%d", [snapshot.tick, _earliest_input, snapshot.tick])
 		_earliest_input = snapshot.tick
@@ -457,6 +482,8 @@ func _handle_input(snapshot: _Snapshot):
 
 func _handle_state(snapshot: _Snapshot):
 	if snapshot.is_empty():
+		return
+	if snapshot.tick < history_start:
 		return
 	if _earliest_state < 0 or snapshot.tick < _earliest_state:
 		_logger.trace("Ingested state @%d, latest @%d->@%d", [snapshot.tick, _earliest_state, snapshot.tick])

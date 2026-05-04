@@ -191,6 +191,11 @@ func _record(tick: int, history: _PerObjectHistory, snapshots: _HistoryBuffer, p
 
 		var subject_snapshot := history.ensure_snapshot(tick, subject, false)
 		if subject_snapshot == null:
+			var earliest := history.get_earliest_tick(subject)
+			if earliest < 0 or tick < earliest:
+				# Subject didn't exist yet at this tick (e.g. just registered);
+				# benign during peer connect, skip silently.
+				continue
 			# Usually this happens when the tick is close to NetworkRollback.history_start, and the
 			# time sync is off by just enough to push it over the edge
 			# e.g. tick arrives slightly in the future, resim goes from the start of history, ring

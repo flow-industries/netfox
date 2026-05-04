@@ -32,6 +32,14 @@ func erase_subject(subject: Object) -> void:
 func clear() -> void:
 	_data.clear()
 
+func get_earliest_tick(subject: Object) -> int:
+	if not _data.has(subject):
+		return -1
+	var history := _data[subject] as _HistoryBuffer
+	if history.is_empty():
+		return -1
+	return history.get_earliest_index()
+
 func ensure_snapshot(tick: int, subject: Object, carry_forward: bool) -> _ObjectSnapshot:
 	var has_subject := _data.has(subject)
 	if not _data.has(subject):
